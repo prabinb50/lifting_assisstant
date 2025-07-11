@@ -5,4 +5,6 @@ lang = "en"
 
 tts = gTTS(text=text, lang=lang)
 
-tts.save("F:\powerlifter\AI_Exercise_Pose_Feedback\resources\sounds")
+# tts.save("F:\powerlifter\AI_Exercise_Pose_Feedback\resources\sounds")
+
+tts.save("F:/powerlifter/AI_Exercise_Pose_Feedback/resources/sounds/down.mp3")
