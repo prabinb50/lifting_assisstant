@@ -606,9 +606,6 @@ with tab2:
         posture_issues = [result['posture_issue'] for result in st.session_state.video_results 
                          if result['posture_issue'] is not None]
         
-        # with col2:
-        #     correct_percentage = sum(1 for issue in posture_issues if issue == "correct") / max(len(posture_issues), 1) * 100
-        #     st.metric("Correct Form %", f"{correct_percentage:.1f}%")
         
         with col3:
             most_common_issue = most_frequent([i for i in posture_issues if i != "correct"]) if posture_issues else "None"
