@@ -10,6 +10,7 @@ import torch
 import pickle
 import random
 import tempfile
+import os
 from PIL import Image
 
 # Page configuration with custom theme
@@ -18,86 +19,244 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        "Get Help": "https://github.com/yourusername/powerlifter",
-        "Report a bug": "https://github.com/yourusername/powerlifter/issues",
+        "Get Help": "https://github.com/prabinb50/lifting_assisstant",
+        "Report a bug": "https://github.com/prabinb50/lifting_assisstant/issues",
         "About": "# AI Posture Coach\nReal-time posture analysis for powerlifting exercises."
     }
 )
 
-# Custom CSS for better UI
+# Enhanced Custom CSS for a more professional UI
 st.markdown("""
 <style>
+    /* Global styles and animations */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    * {
+        font-family: 'Poppins', sans-serif;
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.03); }
+        100% { transform: scale(1); }
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateX(-20px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    /* Main header styling */
     .main-header {
-        font-size: 2.5rem;
-        color: #FF4B4B;
-        text-align: center;
+        font-size: 2.6rem;
+        font-weight: 700;
         margin-bottom: 2rem;
+        animation: fadeIn 0.8s ease-out forwards;
     }
+    
+    /* Sub headers */
     .sub-header {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: #3a7bd5;
         margin-top: 1rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.2rem;
+        border-bottom: none !important;
+        animation: slideIn 0.5s ease-out forwards;
     }
+    
+    /* Tab styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 2rem;
         margin-bottom: 2rem;
+        border-radius: 10px;
+        padding: 5px;
+        background: #f8f9fa;
     }
+    
     .stTabs [data-baseweb="tab"] {
         height: 4rem;
         white-space: pre-wrap;
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 500;
         background-color: #f0f0f0;
+        transition: all 0.3s ease;
     }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: #e0e0e0;
+        transform: translateY(-2px);
+    }
+    
     .stTabs [aria-selected="true"] {
-        background-color: #FF4B4B !important;
+        background: linear-gradient(90deg, #3a7bd5, #00d2ff) !important;
         color: white !important;
+        box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3) !important;
     }
-    .exercise-selector {
-        background-color: #f9f9f9;
-        padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 1.5rem;
-    }
+    
+    /* Button styling */
     .stButton button {
         width: 100%;
-        border-radius: 5px;
-        background-color: #FF4B4B;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #3a7bd5, #00d2ff);
         color: white;
+        font-weight: 500;
+        border: none;
+        padding: 0.6rem 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(58, 123, 213, 0.3);
     }
+    
+    .stButton button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(58, 123, 213, 0.4);
+    }
+    
+    .stButton button:active {
+        transform: translateY(1px);
+    }
+    
+    /* Feedback box styling */
     .feedback-box {
-        padding: 1rem;
-        border-radius: 10px;
+        padding: 1.2rem;
+        border-radius: 12px;
         margin-top: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        animation: fadeIn 0.5s ease-out forwards;
+        transition: all 0.3s ease;
     }
+    
+    .feedback-box:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    
     .positive {
-        background-color: #d1f0d1;
+        background: linear-gradient(to right, #d1f0d1, #e8f8e8);
         border-left: 5px solid #4CAF50;
     }
+    
     .negative {
-        background-color: #f8d7da;
+        background: linear-gradient(to right, #f8d7da, #fce7e9);
         border-left: 5px solid #dc3545;
     }
+    
+    /* Info box styling */
     .info-box {
-        background-color: #e2f0fb;
-        padding: 1rem;
-        border-radius: 10px;
+        background: linear-gradient(to right, #e2f0fb, #eaf5fc);
+        padding: 1.2rem;
+        border-radius: 12px;
         margin-top: 1rem;
         border-left: 5px solid #0dcaf0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        animation: fadeIn 0.6s ease-out forwards;
     }
+    
+    /* Upload box styling */
     .upload-box {
-        border: 2px dashed #aaa;
-        border-radius: 10px;
-        padding: 2rem;
+        border: 2px dashed #3a7bd5;
+        border-radius: 12px;
+        padding: 2.5rem;
         text-align: center;
         margin-bottom: 2rem;
+        background-color: rgba(58, 123, 213, 0.05);
+        transition: all 0.3s ease;
     }
+    
+    .upload-box:hover {
+        background-color: rgba(58, 123, 213, 0.1);
+        transform: translateY(-3px);
+    }
+    
+    /* Metric card styling */
     .metric-card {
-        background-color: #f8f9fa;
-        border-radius: 10px;
-        padding: 1rem;
+        background: linear-gradient(145deg, #ffffff, #f5f7fa);
+        border-radius: 12px;
+        padding: 1.2rem;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border: 1px solid #eaeaea;
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    
+    .metric-card h3 {
+        font-weight: 600;
+        color: #3a7bd5;
+        margin: 0;
+    }
+    
+    /* Progress bar styling */
+    .stProgress > div > div {
+        background-color: #3a7bd5;
+    }
+    
+    /* Remove sidebar divider */
+    .css-18e3th9, .css-1d391kg {
+        padding: 1rem 1rem;
+    }
+    
+    /* Custom expander styling */
+    .streamlit-expanderHeader {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 0.5rem 1rem !important;
+        font-weight: 500;
+    }
+    
+    .streamlit-expanderHeader:hover {
+        background-color: #e9ecef;
+    }
+    
+    /* Image gallery styling */
+    img {
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    img:hover {
+        transform: scale(1.02);
+    }
+    
+    /* Stats emphasis */
+    .stMetric {
+        background: rgba(255, 255, 255, 0.7);
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+    
+    .stMetric [data-testid="stMetricValue"] {
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+        color: #3a7bd5 !important;
+    }
+    
+    /* Fix for sidebar header without extra divs */
+    .block-container, section[data-testid="stSidebar"] div[data-testid="stBlock"] {
+        border: none !important;
+    }
+    
+    /* Info message styling */
+    .stAlert {
+        background-color: rgba(58, 123, 213, 0.1);
+        border: 1px solid #3a7bd5;
+        border-radius: 8px;
+        color: #3a7bd5;
+        padding: 1rem;
+        animation: fadeIn 0.5s ease-out forwards;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -122,6 +281,8 @@ if 'video_file_buffer' not in st.session_state:
     st.session_state.video_file_buffer = None
 if 'video_results' not in st.session_state:
     st.session_state.video_results = []
+if 'webcam_active' not in st.session_state:
+    st.session_state.webcam_active = False
 
 # Initialize Pygame mixer for audio feedback
 pygame.mixer.init()
@@ -305,14 +466,19 @@ def process_frame(frame, model_e, pose, confidence_threshold):
                 # Determine posture issue
                 if st.session_state.posture_status:
                     most_frequent_status = most_frequent(st.session_state.posture_status)
-                    if most_frequent_status and "correct" not in most_frequent_status:
+                    # Default to correct form
+                    results['posture_issue'] = "correct"
+                    
+                    # Check if there's a posture issue
+                    if most_frequent_status:
                         for issue in ["excessive_arch", "arms_spread", "spine_neutral", 
                                     "caved_in_knees", "feet_spread", "arms_narrow"]:
                             if issue in most_frequent_status:
                                 results['posture_issue'] = issue
                                 break
-                    elif most_frequent_status and "correct" in most_frequent_status:
-                        results['posture_issue'] = "correct"
+                    
+                    # Reset posture status for next rep
+                    st.session_state.posture_status = []
                         
         except Exception as e:
             pass
@@ -391,11 +557,13 @@ pose = mp_pose.Pose(
     model_complexity=2
 )
 
-# Common sidebar elements
-st.sidebar.markdown('<h2 class="sub-header">Exercise Configuration</h2>', unsafe_allow_html=True)
+# Common sidebar elements - Fixed to remove unwanted divider
+st.sidebar.markdown("""
+<h2 class="sub-header">Exercise Configuration</h2>
+""", unsafe_allow_html=True)
 
 # Add class to the exercise selection box
-st.sidebar.markdown('<div class="exercise-selector">', unsafe_allow_html=True)
+st.sidebar.markdown('', unsafe_allow_html=True)
 menu_selection = st.sidebar.selectbox("Select Exercise", ("Bench Press", "Squat", "Deadlift"))
 st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
@@ -464,27 +632,43 @@ with tab1:
         1. Make sure your webcam is connected and working
         2. Position yourself so your full body is visible
         3. Select your exercise type from the sidebar
-        4. Begin performing the exercise
-        5. You'll receive real-time feedback on your form
+        4. Click "Start Webcam Analysis" to begin
+        5. Click "Stop Analysis" when you're finished
+        6. You'll receive real-time feedback along with audio cues
         """)
     
-    # Start button for webcam
-    start_webcam = st.button("Start Webcam Analysis")
+    # Webcam control button (single button that toggles between start and stop)
+    button_text = "Stop Analysis" if st.session_state.webcam_active else "Start Webcam Analysis"
+    button_color = "danger" if st.session_state.webcam_active else "primary"
+    webcam_button = st.button(button_text, type=button_color)
     
-    if start_webcam:
+    # Toggle webcam state when button is clicked
+    if webcam_button:
+        st.session_state.webcam_active = not st.session_state.webcam_active
+        
+        # If stopping, reset the counter for a new session
+        if not st.session_state.webcam_active:
+            st.session_state.counter = 0
+            st.session_state.current_stage = ""
+            st.session_state.posture_status = [None]
+            st.experimental_rerun()
+    
+    # Create placeholders for webcam feed and feedback
+    frame_window = st.empty()
+    feedback_placeholder = st.empty()
+    
+    # Only run webcam if active
+    if st.session_state.webcam_active:
         # Video capture
         cap = cv2.VideoCapture(0)
         
-        # Create placeholder for webcam feed
-        frame_window = st.empty()
-        feedback_placeholder = st.empty()
-        
         try:
-            while True:
+            while st.session_state.webcam_active:
                 # Capture frame from webcam
                 ret, frame = cap.read()
                 if not ret:
                     st.error("Failed to access webcam. Please check your camera connection.")
+                    st.session_state.webcam_active = False
                     break
                 
                 # Flip the frame horizontally for a more intuitive mirror view
@@ -526,16 +710,20 @@ with tab1:
                         
                         pygame.mixer.music.load(sound_file)
                         pygame.mixer.music.play()
-                        st.session_state.posture_status = []
                         st.session_state.previous_alert_time = time.time()
                 
                 # Display the processed frame
                 frame_window.image(results['frame'], channels="RGB", use_column_width=True)
                 
+                # Add a small delay to prevent overloading the UI
+                time.sleep(0.03)
+                
         except Exception as e:
             st.error(f"An error occurred: {e}")
         finally:
             cap.release()
+            # Reset webcam active state if there's an error
+            st.session_state.webcam_active = False
 
 # TAB 2: VIDEO UPLOAD MODE
 with tab2:
@@ -548,7 +736,6 @@ with tab2:
         2. Select your exercise type from the sidebar
         3. Click "Process Video" to analyze your form
         4. View the analysis results and feedback
-        5. You can download the analysis report
         """)
     
     # File uploader
@@ -606,10 +793,23 @@ with tab2:
         posture_issues = [result['posture_issue'] for result in st.session_state.video_results 
                          if result['posture_issue'] is not None]
         
+        with col2:
+            # Count reps with correct form
+            correct_reps = sum(1 for result in st.session_state.video_results 
+                              if result['rep_counted'] and result['posture_issue'] == "correct")
+            
+            # Make sure we don't divide by zero
+            if st.session_state.counter > 0:
+                correct_percentage = (correct_reps / st.session_state.counter) * 100
+            else:
+                correct_percentage = 0.0
+                
+            st.metric("Correct Form %", f"{correct_percentage:.1f}%")
         
         with col3:
-            most_common_issue = most_frequent([i for i in posture_issues if i != "correct"]) if posture_issues else "None"
-            st.metric("Most Common Issue", most_common_issue if most_common_issue else "None")
+            issue_list = [i for i in posture_issues if i != "correct" and i is not None]
+            most_common_issue = most_frequent(issue_list) if issue_list else "None"
+            st.metric("Most Common Issue", most_common_issue)
         
         # Display feedback on common issues
         if most_common_issue and most_common_issue != "None":
